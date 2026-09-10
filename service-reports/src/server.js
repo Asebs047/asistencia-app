@@ -17,6 +17,11 @@ app.get("/health", (req, res) => {
 
 app.use("/permissions", permissionsRoutes);
 
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ message: "Error interno del servidor" });
+});
+
 const port = process.env.PORT || 4002;
 
 connectDB()

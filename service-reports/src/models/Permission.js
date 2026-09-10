@@ -11,6 +11,8 @@ const permissionSchema = new mongoose.Schema(
     },
     requestedAt: { type: Date, default: Date.now },
     resolvedAt: { type: Date, default: null },
+    startedAt: { type: Date, default: null },
+    finishedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
