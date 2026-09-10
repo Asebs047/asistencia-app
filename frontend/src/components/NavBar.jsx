@@ -18,7 +18,7 @@ export default function NavBar() {
         Asistencia App
       </Link>
       <div className="navbar-links">
-        {user && (
+        {user?.passwordChanged && (
           <>
             <NavLink to="/" end>
               Mi panel
@@ -26,6 +26,7 @@ export default function NavBar() {
             <NavLink to="/grupos">Grupos</NavLink>
           </>
         )}
+        {user && <NavLink to="/cambiar-password">Contraseña</NavLink>}
         {user ? (
           <>
             <span className="navbar-user">

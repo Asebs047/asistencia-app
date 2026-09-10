@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Groups from "./pages/Groups";
 import Login from "./pages/Login";
 import Panel from "./pages/Panel";
+import ChangePassword from "./pages/ChangePassword";
 
 export default function App() {
   return (
@@ -12,6 +13,14 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/cambiar-password"
+            element={
+              <ProtectedRoute allowUnchangedPassword>
+                <ChangePassword />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/grupos"
             element={
