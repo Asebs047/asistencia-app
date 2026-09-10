@@ -20,11 +20,14 @@ function slugify(value) {
     .replace(/[^a-z]/g, "");
 }
 
-// ej. Juan Pérez + carnet 2024048 -> jperez-2024048@example.com
+// ej. Juan Pérez + carnet 2024048 -> jperez-2024048@example.com. Si el nombre no
+// aporta ninguna letra a-z (ej. solo caracteres no latinos), se usa "alumno" como
+// respaldo para no generar un correo con solo el carnet.
 function generateStudentEmail(firstName, lastName, carnetCode) {
   const initial = slugify(firstName).charAt(0);
   const last = slugify(lastName);
-  return `${initial}${last}-${carnetCode}@example.com`;
+  const local = `${initial}${last}` || "alumno";
+  return `${local}-${carnetCode}@example.com`;
 }
 
 const userSchema = new mongoose.Schema(

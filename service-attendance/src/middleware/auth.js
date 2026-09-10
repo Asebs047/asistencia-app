@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
-export function authMiddleware(req, res, next) {
+export async function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Token no proporcionado" });
@@ -8,7 +9,16 @@ export function authMiddleware(req, res, next) {
 
   try {
     const token = header.slice("Bearer ".length);
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Se revalida en cada solicitud (no solo en el login) para que desactivar una
+    // cuenta corte su acceso de inmediato, no hasta que el token expire por sí solo.
+    const user = await User.findById(payload.sub).select("active");
+    if (!user || !user.active) {
+      return res.status(401).json({ message: "Cuenta inactiva" });
+    }
+
+    req.user = payload;
     next();
   } catch {
     res.status(401).json({ message: "Token inválido o expirado" });

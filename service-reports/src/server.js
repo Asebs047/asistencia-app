@@ -6,6 +6,7 @@ import { connectDB } from "./config/db.js";
 import permissionsRoutes from "./routes/permissions.routes.js";
 import reportsRoutes from "./routes/reports.routes.js";
 import statisticsRoutes from "./routes/statistics.routes.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
@@ -25,10 +26,7 @@ app.use((req, res) => {
   res.status(404).json({ message: "Recurso no encontrado" });
 });
 
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ message: "Error interno del servidor" });
-});
+app.use(errorHandler);
 
 const port = process.env.PORT || 4002;
 

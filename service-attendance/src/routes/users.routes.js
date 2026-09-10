@@ -114,6 +114,21 @@ router.put(
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
+    // No permitir dejar al sistema sin ningún coordinador activo (ni por
+    // desactivación propia ni de otro): sin esto, nadie podría revertirlo.
+    if (user.role === "coordinador" && parsed.data.active === false) {
+      const otherActiveCoordinators = await User.countDocuments({
+        role: "coordinador",
+        active: true,
+        _id: { $ne: user._id },
+      });
+      if (otherActiveCoordinators === 0) {
+        return res.status(409).json({
+          message: "No puedes desactivar al único coordinador activo del sistema",
+        });
+      }
+    }
+
     Object.assign(user, parsed.data);
     await user.save();
     res.json(user);

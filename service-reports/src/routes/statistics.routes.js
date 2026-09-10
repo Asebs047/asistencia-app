@@ -84,7 +84,8 @@ router.get(
 router.get(
   "/absences",
   asyncHandler(async (req, res) => {
-    const days = Number(req.query.days) > 0 ? Number(req.query.days) : 7;
+    const requested = Number(req.query.days);
+    const days = requested > 0 ? Math.min(requested, 365) : 7;
     const client = attendanceClientFor(req.token);
     const [{ data: students }, { data: attendance }] = await Promise.all([
       client.get("/users", { params: { role: "alumno" } }),
