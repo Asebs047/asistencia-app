@@ -28,3 +28,16 @@
   opacity: 1;
   text-decoration: underline;
 }
+
+.navbar-user {
+  opacity: 0.8;
+}
+
+.navbar-logout {
+  background: transparent;
+  border: 1px solid white;
+  color: white;
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+}
