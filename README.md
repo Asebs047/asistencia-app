@@ -52,6 +52,11 @@ npm run dev
 `JWT_SECRET` debe ser **el mismo valor** en `.env` de `service-attendance` y de
 `service-reports`, ya que ambos verifican el mismo token sin llamarse entre sí para auth.
 
+El carnet es **obligatorio** para alumnos (no aplica a maestro/coordinador): 7 dígitos,
+los primeros 4 son el año de inscripción y los últimos 3 el identificador (ej. `2024047`).
+La asistencia registra entrada y salida por separado (un máximo de una de cada por día
+por alumno), cada una con fecha, hora, alumno, grupo y método (`carnet` o `biometric`).
+
 Usuarios de prueba creados por el seed (contraseña `changeme123` para todos):
 
 | Rol | Email |
