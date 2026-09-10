@@ -49,6 +49,27 @@ npm run seed   # crea datos de ejemplo (coordinador, maestro, grupo, alumnos)
 npm run dev
 ```
 
+`JWT_SECRET` debe ser **el mismo valor** en `.env` de `service-attendance` y de
+`service-reports`, ya que ambos verifican el mismo token sin llamarse entre sí para auth.
+
+El carnet es **obligatorio** para alumnos (no aplica a maestro/coordinador): 7 dígitos,
+los primeros 4 son el año de inscripción y los últimos 3 el identificador (ej. `2024047`).
+La asistencia registra entrada y salida por separado (un máximo de una de cada por día
+por alumno), cada una con fecha, hora, alumno, grupo y método (`carnet` o `biometric`).
+
+Los usuarios piden nombre y apellido por separado. El email de los alumnos **se genera
+automáticamente** (primera letra del nombre + apellido + `-` + carnet, ej. `Juan Pérez`
+con carnet `2024048` → `jperez-2024048@example.com`); maestro y coordinador sí ingresan
+su email manualmente, ya que no tienen carnet.
+
+Usuarios de prueba creados por el seed (contraseña `changeme123` para todos):
+
+| Rol | Email |
+| --- | --- |
+| coordinador | coordinadora@example.com |
+| maestro | maestro@example.com |
+| alumno | calumno-2024001@example.com / malumna-2024002@example.com |
+
 ### 3. Servicio B — service-reports (puerto 4002)
 
 ```bash
@@ -80,6 +101,17 @@ mediante Pull Request al finalizar:
 - `sprint-3`: reportes, estadísticas, historial, control completo de roles, mejoras
   visuales y PWA, README final.
 
+## Biometría (WebAuthn)
+
+La marcación biométrica usa WebAuthn real (`@simplewebauthn/server` y
+`@simplewebauthn/browser`), no una simulación: el alumno enrola el autenticador de su
+propio equipo (Windows Hello, huella, etc.) desde su panel ("Registrar biometría") y
+luego puede marcar asistencia con él ("Marcar con biometría"). Solo se guarda el ID de
+credencial y la llave pública en MongoDB — nunca datos biométricos crudos. Funciona en
+`http://localhost` sin necesidad de HTTPS. El diálogo del autenticador es del sistema
+operativo/navegador, así que ese paso debe probarse en un navegador real (Chrome/Edge)
+con un lector de huellas o Windows Hello configurado.
+
 ## Estado actual
 
-Sprint 1 en desarrollo.
+Sprint 2 en desarrollo.

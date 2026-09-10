@@ -12,7 +12,7 @@ export default defineConfig({
         name: 'Asistencia App',
         short_name: 'Asistencia',
         description: 'Gestión de asistencia y permisos',
-        theme_color: '#1e3a5f',
+        theme_color: '#3730a3',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',

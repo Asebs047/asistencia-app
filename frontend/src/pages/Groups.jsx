@@ -18,10 +18,7 @@ export default function Groups() {
   if (error)
     return (
       <section className="page">
-        <p className="error">
-          No se pudo conectar con el Servicio A ({error}). Verifica que esté
-          corriendo en el puerto 4001.
-        </p>
+        <p className="error">No se pudieron cargar los grupos: {error}</p>
       </section>
     );
 
