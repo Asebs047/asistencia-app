@@ -4,6 +4,8 @@ import cors from "cors";
 import morgan from "morgan";
 import { connectDB } from "./config/db.js";
 import permissionsRoutes from "./routes/permissions.routes.js";
+import reportsRoutes from "./routes/reports.routes.js";
+import statisticsRoutes from "./routes/statistics.routes.js";
 
 const app = express();
 
@@ -16,6 +18,12 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/permissions", permissionsRoutes);
+app.use("/reports", reportsRoutes);
+app.use("/statistics", statisticsRoutes);
+
+app.use((req, res) => {
+  res.status(404).json({ message: "Recurso no encontrado" });
+});
 
 app.use((err, req, res, next) => {
   console.error(err);
