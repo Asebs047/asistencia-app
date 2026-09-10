@@ -157,7 +157,8 @@ biometricAttendanceRouter.post(
     credentialRecord.counter = verification.authenticationInfo.newCounter;
     await credentialRecord.save();
 
+    const type = req.query.type === "salida" ? "salida" : "entrada";
     const student = await User.findById(req.user.sub);
-    await createAttendance(student, "biometric", res);
+    await createAttendance(student, "biometric", type, res);
   })
 );

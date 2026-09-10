@@ -10,11 +10,12 @@ const router = Router();
 
 const cardSchema = z.object({
   carnetCode: z.string().min(1),
+  type: z.enum(["entrada", "salida"]).default("entrada"),
 });
 
 router.use(authMiddleware);
 
-async function createAttendance(student, method, res) {
+async function createAttendance(student, method, type, res) {
   if (!student || !student.active) {
     return res.status(404).json({ message: "Alumno no encontrado o inactivo" });
   }
@@ -22,23 +23,34 @@ async function createAttendance(student, method, res) {
     return res.status(422).json({ message: "El alumno no pertenece a ningún grupo" });
   }
 
+  const day = startOfDay(new Date());
+
+  if (type === "salida") {
+    const entrada = await Attendance.findOne({ studentId: student._id, day, type: "entrada" });
+    if (!entrada) {
+      return res.status(422).json({ message: "No se puede registrar salida sin una entrada previa hoy" });
+    }
+  }
+
   try {
     const attendance = await Attendance.create({
       studentId: student._id,
       groupId: student.groupId,
       method,
-      day: startOfDay(new Date()),
+      type,
+      day,
     });
     return res.status(201).json(attendance);
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(409).json({ message: "El alumno ya marcó asistencia hoy" });
+      const label = type === "entrada" ? "una entrada" : "una salida";
+      return res.status(409).json({ message: `El alumno ya registró ${label} hoy` });
     }
     throw err;
   }
 }
 
-// POST /attendance/card - marcación por carnet (alumno o coordinador/maestro operando el lector)
+// POST /attendance/card - marcación por carnet (entrada o salida)
 router.post(
   "/card",
   asyncHandler(async (req, res) => {
@@ -48,7 +60,7 @@ router.post(
     }
 
     const student = await User.findOne({ carnetCode: parsed.data.carnetCode, role: "alumno" });
-    await createAttendance(student, "carnet", res);
+    await createAttendance(student, "carnet", parsed.data.type, res);
   })
 );
 
@@ -56,7 +68,7 @@ router.post(
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const { role, sub, groupId } = req.user;
+    const { role, sub } = req.user;
 
     if (role === "coordinador") {
       return res.json(await Attendance.find().sort({ markedAt: -1 }));
