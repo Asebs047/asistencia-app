@@ -1,0 +1,85 @@
+# asistencia-app
+
+Sistema de gestión de asistencia y permisos (salidas al baño) para instituciones
+educativas. Monorepo con frontend React (PWA) y dos servicios backend independientes
+sobre Node.js/Express y MongoDB.
+
+## Arquitectura
+
+```
+asistencia-app/
+├── frontend/            # React + Vite, PWA
+├── service-attendance/  # Servicio A: gestión operativa (puerto 4001)
+├── service-reports/     # Servicio B: reportes, estadísticas y permisos (puerto 4002)
+├── docker-compose.yml   # MongoDB local para desarrollo
+└── README.md
+```
+
+- **Servicio A (`service-attendance`)**: autenticación, usuarios, roles, grupos,
+  asociación maestro/alumno, marcación de asistencia (carnet y biometría/simulación),
+  consulta de asistencia.
+- **Servicio B (`service-reports`)**: solicitud y gestión de permisos para ir al baño,
+  reportes y estadísticas de asistencia y permisos. Consume datos de Servicio A vía HTTP
+  y genera sus propios resultados (no reenvía solicitudes).
+- Cada servicio tiene su propio proyecto Node.js, `package.json`, dependencias y base de
+  datos MongoDB independiente (`asistencia_attendance` y `asistencia_reports`).
+
+## Requisitos
+
+- Node.js 18+
+- MongoDB (local o vía `docker-compose up -d`)
+
+## Cómo levantar el proyecto
+
+### 1. MongoDB
+
+```bash
+docker-compose up -d
+```
+
+o usar una instancia local/Atlas y ajustar `MONGO_URI` en cada `.env`.
+
+### 2. Servicio A — service-attendance (puerto 4001)
+
+```bash
+cd service-attendance
+npm install
+cp .env.example .env
+npm run seed   # crea datos de ejemplo (coordinador, maestro, grupo, alumnos)
+npm run dev
+```
+
+### 3. Servicio B — service-reports (puerto 4002)
+
+```bash
+cd service-reports
+npm install
+cp .env.example .env
+npm run dev
+```
+
+### 4. Frontend (puerto 5173)
+
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+## Flujo de ramas y sprints
+
+El desarrollo se divide en 3 sprints, cada uno en su propia rama, integrado a `main`
+mediante Pull Request al finalizar:
+
+- `sprint-1`: base del monorepo, ambos servicios y frontend arrancando, primer endpoint
+  de cada servicio, primera pantalla del frontend consumiendo la API.
+- `sprint-2`: autenticación/autorización, gestión de usuarios/grupos, marcación de
+  asistencia por carnet y flujo biométrico (o simulación), gestión inicial de permisos,
+  comunicación entre servicios.
+- `sprint-3`: reportes, estadísticas, historial, control completo de roles, mejoras
+  visuales y PWA, README final.
+
+## Estado actual
+
+Sprint 1 en desarrollo.
