@@ -50,6 +50,7 @@ const userSchema = new mongoose.Schema(
       },
     },
     active: { type: Boolean, default: true },
+    passwordChanged: { type: Boolean, default: false },
     groupId: { type: mongoose.Schema.Types.ObjectId, ref: "Group", default: null },
   },
   { timestamps: true }
