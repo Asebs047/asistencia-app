@@ -1,33 +1,42 @@
 import "dotenv/config";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import { connectDB } from "./config/db.js";
 import User from "./models/User.js";
 import Group from "./models/Group.js";
+import Attendance from "./models/Attendance.js";
+import WebauthnCredential from "./models/WebauthnCredential.js";
+
+const DEFAULT_PASSWORD = "changeme123";
 
 async function seed() {
   await connectDB();
 
   await User.deleteMany({});
   await Group.deleteMany({});
+  await Attendance.deleteMany({});
+  await WebauthnCredential.deleteMany({});
+
+  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
 
   const coordinador = await User.create({
     name: "Ana Coordinadora",
     email: "coordinadora@example.com",
-    passwordHash: "placeholder",
+    passwordHash,
     role: "coordinador",
   });
 
   const maestro = await User.create({
     name: "Luis Maestro",
     email: "maestro@example.com",
-    passwordHash: "placeholder",
+    passwordHash,
     role: "maestro",
   });
 
   const alumno1 = await User.create({
     name: "Carlos Alumno",
     email: "alumno1@example.com",
-    passwordHash: "placeholder",
+    passwordHash,
     role: "alumno",
     carnetCode: "2024001",
   });
@@ -35,7 +44,7 @@ async function seed() {
   const alumno2 = await User.create({
     name: "Maria Alumna",
     email: "alumno2@example.com",
-    passwordHash: "placeholder",
+    passwordHash,
     role: "alumno",
     carnetCode: "2024002",
   });
@@ -51,8 +60,14 @@ async function seed() {
     { groupId: grupo._id }
   );
 
-  console.log("Seed completado:");
-  console.log({ coordinador: coordinador.email, maestro: maestro.email, grupo: grupo.name });
+  console.log("Seed completado. Contraseña para todos los usuarios:", DEFAULT_PASSWORD);
+  console.log({
+    coordinador: coordinador.email,
+    maestro: maestro.email,
+    alumno1: alumno1.email,
+    alumno2: alumno2.email,
+    grupo: grupo.name,
+  });
 
   await mongoose.disconnect();
 }
