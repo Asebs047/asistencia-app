@@ -97,6 +97,11 @@ router.get(
     if (role === "alumno" && req.params.studentId !== sub) {
       return res.status(403).json({ message: "No puedes consultar asistencia de otro alumno" });
     }
+    if (role === "maestro") {
+      const student = await User.findById(req.params.studentId).select("groupId");
+      const group = student?.groupId ? await Group.findOne({ _id: student.groupId, teacherId: sub }) : null;
+      if (!group) return res.status(403).json({ message: "No eres maestro de este alumno" });
+    }
     res.json(await Attendance.find({ studentId: req.params.studentId }).sort({ markedAt: -1 }));
   })
 );

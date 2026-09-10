@@ -2,7 +2,8 @@
 
 Sistema de gestión de asistencia y permisos (salidas al baño) para instituciones
 educativas. Monorepo con frontend React (PWA) y dos servicios backend independientes
-sobre Node.js/Express y MongoDB.
+sobre Node.js/Express y MongoDB, con autenticación JWT y control de acceso por rol
+(coordinador, maestro, alumno).
 
 ## Arquitectura
 
@@ -15,14 +16,23 @@ asistencia-app/
 └── README.md
 ```
 
-- **Servicio A (`service-attendance`)**: autenticación, usuarios, roles, grupos,
-  asociación maestro/alumno, marcación de asistencia (carnet y biometría/simulación),
-  consulta de asistencia.
+- **Servicio A (`service-attendance`)**: autenticación (JWT), usuarios, roles, grupos,
+  asociación maestro/alumno, marcación de asistencia (carnet y biometría real vía
+  WebAuthn), consulta de asistencia por rol.
 - **Servicio B (`service-reports`)**: solicitud y gestión de permisos para ir al baño,
   reportes y estadísticas de asistencia y permisos. Consume datos de Servicio A vía HTTP
-  y genera sus propios resultados (no reenvía solicitudes).
-- Cada servicio tiene su propio proyecto Node.js, `package.json`, dependencias y base de
-  datos MongoDB independiente (`asistencia_attendance` y `asistencia_reports`).
+  (nunca accede a su base de datos directamente) y **procesa esa información para generar
+  resultados propios** — puntualidad, ausencias, duración/frecuencia de permisos — en vez
+  de solo reenviar lo que recibe.
+- Cada servicio es un proyecto Node.js independiente: su propio `package.json`,
+  dependencias, puerto y base de datos MongoDB (`asistencia_attendance` y
+  `asistencia_reports`).
+
+### Stack
+
+React 19, Vite, React Router, Zustand, Axios, `vite-plugin-pwa` · Node.js, Express 5,
+Mongoose, JWT (`jsonwebtoken`), `bcryptjs`, `zod`, `@simplewebauthn/server` ·
+`@simplewebauthn/browser` · MongoDB · Docker Compose · Git/GitHub.
 
 ## Requisitos
 
@@ -45,30 +55,9 @@ o usar una instancia local/Atlas y ajustar `MONGO_URI` en cada `.env`.
 cd service-attendance
 npm install
 cp .env.example .env
-npm run seed   # crea datos de ejemplo (coordinador, maestro, grupo, alumnos)
+npm run seed   # crea datos de ejemplo (2 grupos, 2 maestros, 6 alumnos, historial de asistencia)
 npm run dev
 ```
-
-`JWT_SECRET` debe ser **el mismo valor** en `.env` de `service-attendance` y de
-`service-reports`, ya que ambos verifican el mismo token sin llamarse entre sí para auth.
-
-El carnet es **obligatorio** para alumnos (no aplica a maestro/coordinador): 7 dígitos,
-los primeros 4 son el año de inscripción y los últimos 3 el identificador (ej. `2024047`).
-La asistencia registra entrada y salida por separado (un máximo de una de cada por día
-por alumno), cada una con fecha, hora, alumno, grupo y método (`carnet` o `biometric`).
-
-Los usuarios piden nombre y apellido por separado. El email de los alumnos **se genera
-automáticamente** (primera letra del nombre + apellido + `-` + carnet, ej. `Juan Pérez`
-con carnet `2024048` → `jperez-2024048@example.com`); maestro y coordinador sí ingresan
-su email manualmente, ya que no tienen carnet.
-
-Usuarios de prueba creados por el seed (contraseña `changeme123` para todos):
-
-| Rol | Email |
-| --- | --- |
-| coordinador | coordinadora@example.com |
-| maestro | maestro@example.com |
-| alumno | calumno-2024001@example.com / malumna-2024002@example.com |
 
 ### 3. Servicio B — service-reports (puerto 4002)
 
@@ -77,7 +66,11 @@ cd service-reports
 npm install
 cp .env.example .env
 npm run dev
+npm run seed   # opcional: crea permisos de ejemplo (requiere service-attendance corriendo y ya sembrado)
 ```
+
+`JWT_SECRET` debe ser **el mismo valor** en el `.env` de ambos servicios: cada uno
+verifica el token de forma independiente, sin llamarse entre sí para autenticar.
 
 ### 4. Frontend (puerto 5173)
 
@@ -88,30 +81,120 @@ cp .env.example .env
 npm run dev
 ```
 
-## Flujo de ramas y sprints
+Abre `http://localhost:5173`. El navegador debe ofrecer instalar la app como PWA (ícono
+de instalación en la barra de direcciones, o "Agregar a pantalla de inicio" en móvil).
 
-El desarrollo se divide en 3 sprints, cada uno en su propia rama, integrado a `main`
-mediante Pull Request al finalizar:
+### Variables de entorno relevantes
 
-- `sprint-1`: base del monorepo, ambos servicios y frontend arrancando, primer endpoint
-  de cada servicio, primera pantalla del frontend consumiendo la API.
-- `sprint-2`: autenticación/autorización, gestión de usuarios/grupos, marcación de
-  asistencia por carnet y flujo biométrico (o simulación), gestión inicial de permisos,
-  comunicación entre servicios.
-- `sprint-3`: reportes, estadísticas, historial, control completo de roles, mejoras
-  visuales y PWA, README final.
+| Variable | Servicio | Descripción |
+| --- | --- | --- |
+| `JWT_SECRET` | ambos | Debe ser idéntico en los dos `.env` |
+| `ATTENDANCE_SERVICE_URL` | reports | URL de Servicio A para las llamadas HTTP internas |
+| `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN` | attendance | Dominio/origen esperado por WebAuthn (`localhost` en desarrollo) |
+| `ATTENDANCE_ENTRY_TIME` / `ATTENDANCE_GRACE_MINUTES` | reports | Hora de entrada y margen de tolerancia para el reporte de puntualidad (por defecto `07:00` + `15` min) |
+| `DEFAULT_USER_PASSWORD` | attendance | Contraseña temporal asignada a todo usuario nuevo (por defecto `changeme123`) |
 
-## Biometría (WebAuthn)
+## Usuarios y reglas de negocio
+
+El carnet es **obligatorio** para alumnos (no aplica a maestro/coordinador): 7 dígitos,
+los primeros 4 son el año de inscripción y los últimos 3 el identificador (ej.
+`2024047`). Un alumno solo puede pertenecer a **un grupo a la vez** (invariante
+estructural: `User.groupId`, no un arreglo que se pueda desincronizar).
+
+Los formularios de alta piden nombre y apellido por separado, y son distintos por rol:
+el de alumno pide carnet y **no** pide email (se autogenera: primera letra del nombre +
+apellido + `-` + carnet, ej. `Juan Pérez` con carnet `2024048` →
+`jperez-2024048@example.com`); maestro y coordinador ingresan su email manualmente.
+Ninguno de los dos formularios pide contraseña: **todo usuario nuevo recibe una
+contraseña temporal** (mostrada una sola vez al coordinador al crearlo) y queda marcado
+como pendiente de cambiarla (`passwordChanged: false`). En su primer inicio de sesión el
+sistema lo redirige automáticamente a "Cambiar contraseña" y no lo deja continuar hasta
+hacerlo; cualquier usuario puede volver a cambiarla después desde el enlace
+"Contraseña" del menú.
+
+Usuarios de prueba creados por el seed — ya marcados como `passwordChanged: true` para
+que la demo no pida cambiarla (contraseña `changeme123` para todos):
+
+| Rol | Nombre | Email |
+| --- | --- | --- |
+| coordinador | Ana Coordinadora | coordinadora@example.com |
+| maestro | Luis Maestro (Grupo A) | maestro@example.com |
+| maestro | Sofia Martinez (Grupo B) | smartinez@example.com |
+| alumno | Carlos Alumno (2024001, Grupo A) | calumno-2024001@example.com |
+| alumno | Maria Alumna (2024002, Grupo A) | malumna-2024002@example.com |
+| alumno | Jose Ramirez (2024003, Grupo A) | jramirez-2024003@example.com |
+| alumno | Ana Torres (2024004, Grupo B) | atorres-2024004@example.com |
+| alumno | Pedro Diaz (2024005, Grupo B) | pdiaz-2024005@example.com |
+| alumno | Lucia Fernandez (2024006, Grupo B) | lfernandez-2024006@example.com |
+
+El seed también crea ~5 días de historial de asistencia por alumno (con entradas
+puntuales, tarde y ausencias mezcladas) y el de `service-reports` crea permisos de
+ejemplo en distintos estados — para que los reportes y estadísticas tengan datos reales
+que mostrar desde el primer arranque, sin tener que generarlos a mano.
+
+### Roles y permisos
+
+| Acción | Coordinador | Maestro | Alumno |
+| --- | --- | --- | --- |
+| Gestionar usuarios (alta/baja) | ✅ | ❌ | ❌ |
+| Gestionar grupos y asignar alumnos | ✅ | ❌ | ❌ |
+| Consultar todos los grupos/asistencia | ✅ | Solo los suyos | Solo el propio |
+| Marcar asistencia (carnet/biometría) | — | — | ✅ (solo la propia) |
+| Solicitar permiso | ❌ | ❌ | ✅ |
+| Autorizar/rechazar permiso | ✅ | Solo de sus grupos | ❌ |
+| Iniciar/finalizar su propio permiso | ❌ | ❌ | ✅ |
+| Reportes y estadísticas | ✅ | Solo de sus grupos | ❌ |
+
+## Referencia de API
+
+**service-attendance** (`:4001`) — `POST /auth/login`, `POST /auth/change-password` ·
+`GET/POST /users`,
+`PUT /users/:id` · `GET/POST /groups`, `PUT /groups/:id`, `GET /groups/:id` ·
+`POST /attendance/card`, `POST /attendance/biometric`,
+`POST /attendance/biometric/simulate`, `GET /attendance`,
+`GET /attendance/student/:id`, `GET /attendance/group/:id` ·
+`POST /webauthn/register/options`, `POST /webauthn/register/verify`,
+`POST /webauthn/attendance/options`.
+
+**service-reports** (`:4002`) — `GET/POST /permissions`,
+`PATCH /permissions/:id/{authorize,reject,start,finish}` ·
+`GET /reports/attendance`, `GET /reports/attendance/student/:id`,
+`GET /reports/attendance/group/:id`, `GET /reports/permissions` ·
+`GET /statistics/summary`, `GET /statistics/punctuality`, `GET /statistics/absences`.
+
+Todos los endpoints (salvo `/health` y `/auth/login`) requieren
+`Authorization: Bearer <token>`.
+
+## Biometría (WebAuthn real + simulación)
 
 La marcación biométrica usa WebAuthn real (`@simplewebauthn/server` y
-`@simplewebauthn/browser`), no una simulación: el alumno enrola el autenticador de su
-propio equipo (Windows Hello, huella, etc.) desde su panel ("Registrar biometría") y
-luego puede marcar asistencia con él ("Marcar con biometría"). Solo se guarda el ID de
-credencial y la llave pública en MongoDB — nunca datos biométricos crudos. Funciona en
-`http://localhost` sin necesidad de HTTPS. El diálogo del autenticador es del sistema
-operativo/navegador, así que ese paso debe probarse en un navegador real (Chrome/Edge)
-con un lector de huellas o Windows Hello configurado.
+`@simplewebauthn/browser`): el alumno enrola el autenticador de su propio equipo
+(Windows Hello, Touch ID en Mac, huella en Android — es un estándar multiplataforma, no
+exclusivo de Windows) desde su panel ("Registrar biometría") y luego marca asistencia
+con él ("Marcar con biometría"). Solo se guarda el ID de credencial y la llave pública en
+MongoDB — **nunca** datos biométricos crudos. Funciona en `http://localhost` sin HTTPS;
+para probarlo desde otro dispositivo en red (no `localhost`) hace falta HTTPS y ajustar
+`WEBAUTHN_RP_ID`/`WEBAUTHN_ORIGIN`, ya que WebAuthn exige un origen seguro.
+
+Como alternativa para equipos sin autenticador de plataforma disponible, cada alumno
+tiene un botón "Simular entrada/salida" que registra la asistencia con método
+`biometric` sin verificar una aserción criptográfica real — técnicamente justificado
+para poder demostrar el flujo completo en cualquier entorno.
+
+## Flujo de ramas y sprints
+
+Monorepo con un PR por sprint hacia `main`, revisado e integrado al finalizar cada uno:
+
+- **`sprint-1`**: base del monorepo, ambos servicios y frontend arrancando, primer
+  endpoint de cada servicio, primera pantalla del frontend consumiendo la API.
+- **`sprint-2`**: autenticación JWT y roles, gestión de usuarios/grupos, marcación de
+  asistencia por carnet y biometría real, ciclo completo de permisos, comunicación HTTP
+  real entre servicios.
+- **`sprint-3`**: reportes y estadísticas (puntualidad, ausencias, permisos), repaso de
+  control de roles y manejo de errores, rediseño visual, íconos PWA, README final.
 
 ## Estado actual
 
-Sprint 2 en desarrollo.
+Proyecto completo — los 3 sprints están integrados en `main` y la aplicación es
+funcional de punta a punta: autenticación por rol, asistencia por carnet/biometría,
+permisos, reportes/estadísticas y PWA instalable.

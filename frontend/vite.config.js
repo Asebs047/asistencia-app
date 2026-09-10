@@ -12,8 +12,8 @@ export default defineConfig({
         name: 'Asistencia App',
         short_name: 'Asistencia',
         description: 'Gestión de asistencia y permisos',
-        theme_color: '#3730a3',
-        background_color: '#ffffff',
+        theme_color: '#0d5c63',
+        background_color: '#faf8f4',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -21,6 +21,22 @@ export default defineConfig({
             src: 'favicon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
+          },
+          {
+            src: 'icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
           },
         ],
       },

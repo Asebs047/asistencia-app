@@ -8,6 +8,7 @@ import usersRoutes from "./routes/users.routes.js";
 import groupsRoutes from "./routes/groups.routes.js";
 import attendanceRoutes from "./routes/attendance.routes.js";
 import webauthnRoutes, { biometricAttendanceRouter } from "./webauthn/webauthn.routes.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
@@ -26,10 +27,11 @@ app.use("/attendance", attendanceRoutes);
 app.use("/webauthn", webauthnRoutes);
 app.use("/attendance", biometricAttendanceRouter);
 
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ message: "Error interno del servidor" });
+app.use((req, res) => {
+  res.status(404).json({ message: "Recurso no encontrado" });
 });
+
+app.use(errorHandler);
 
 const port = process.env.PORT || 4001;
 

@@ -15,8 +15,11 @@ const carnetSchema = z
 const nameFields = {
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  password: z.string().min(6),
 };
+
+// Contraseña temporal asignada a todo usuario nuevo; debe cambiarla en su primer
+// inicio de sesión (ver User.passwordChanged y POST /auth/change-password).
+const DEFAULT_PASSWORD = process.env.DEFAULT_USER_PASSWORD || "changeme123";
 
 // El alumno no envía email: se genera a partir de su nombre y carnet.
 const createStudentSchema = z.object({
@@ -84,12 +87,11 @@ router.post(
       return res.status(400).json({ message: "Datos inválidos", errors: parsed.error.issues });
     }
 
-    const { password, ...rest } = parsed.data;
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
 
     try {
-      const user = await User.create({ ...rest, passwordHash });
-      res.status(201).json(user);
+      const user = await User.create({ ...parsed.data, passwordHash, passwordChanged: false });
+      res.status(201).json({ ...user.toObject(), temporaryPassword: DEFAULT_PASSWORD });
     } catch (err) {
       if (err.code === 11000) {
         return res.status(409).json({ message: "El email o carnet ya está registrado" });
@@ -111,6 +113,21 @@ router.put(
 
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    // No permitir dejar al sistema sin ningún coordinador activo (ni por
+    // desactivación propia ni de otro): sin esto, nadie podría revertirlo.
+    if (user.role === "coordinador" && parsed.data.active === false) {
+      const otherActiveCoordinators = await User.countDocuments({
+        role: "coordinador",
+        active: true,
+        _id: { $ne: user._id },
+      });
+      if (otherActiveCoordinators === 0) {
+        return res.status(409).json({
+          message: "No puedes desactivar al único coordinador activo del sistema",
+        });
+      }
+    }
 
     Object.assign(user, parsed.data);
     await user.save();

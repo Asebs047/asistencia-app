@@ -129,8 +129,20 @@ router.put(
 router.get(
   "/:id",
   asyncHandler(async (req, res) => {
+    const { role, sub } = req.user;
     const group = await Group.findById(req.params.id);
     if (!group) return res.status(404).json({ message: "Grupo no encontrado" });
+
+    if (role === "maestro" && group.teacherId?.toString() !== sub) {
+      return res.status(403).json({ message: "No eres maestro de este grupo" });
+    }
+    if (role === "alumno") {
+      const self = await User.findById(sub).select("groupId");
+      if (self?.groupId?.toString() !== group._id.toString()) {
+        return res.status(403).json({ message: "No perteneces a este grupo" });
+      }
+    }
+
     res.json(group);
   })
 );

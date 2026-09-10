@@ -8,6 +8,7 @@ export function attendanceClientFor(token) {
   return axios.create({
     baseURL,
     headers: { Authorization: `Bearer ${token}` },
+    timeout: 5000,
   });
 }
 

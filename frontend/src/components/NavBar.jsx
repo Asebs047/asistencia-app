@@ -1,5 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import { IconLogout } from "./icons";
 import "./NavBar.css";
 
 export default function NavBar() {
@@ -17,7 +18,7 @@ export default function NavBar() {
         Asistencia App
       </Link>
       <div className="navbar-links">
-        {user && (
+        {user?.passwordChanged && (
           <>
             <NavLink to="/" end>
               Mi panel
@@ -25,12 +26,14 @@ export default function NavBar() {
             <NavLink to="/grupos">Grupos</NavLink>
           </>
         )}
+        {user && <NavLink to="/cambiar-password">Contraseña</NavLink>}
         {user ? (
           <>
             <span className="navbar-user">
               {user.name} ({user.role})
             </span>
             <button className="navbar-logout" onClick={handleLogout}>
+              <IconLogout />
               Salir
             </button>
           </>

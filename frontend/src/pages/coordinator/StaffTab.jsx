@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { attendanceApi } from "../../api/attendanceApi";
 
-const emptyForm = { firstName: "", lastName: "", email: "", password: "" };
+const emptyForm = { firstName: "", lastName: "", email: "" };
 
-// Formulario y listado compartido para maestro/coordinador: solo nombre, email
-// y contraseña (sin carnet, a diferencia de los alumnos).
+// Formulario y listado compartido para maestro/coordinador: solo nombre, apellido y
+// email (sin carnet ni contraseña — la contraseña temporal se asigna automáticamente).
 export default function StaffTab({ role, label }) {
   const [staff, setStaff] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
 
   async function load() {
     const { data } = await attendanceApi.get("/users", { params: { role } });
@@ -22,9 +24,14 @@ export default function StaffTab({ role, label }) {
   async function handleCreate(e) {
     e.preventDefault();
     setError(null);
+    setMessage(null);
     try {
-      await attendanceApi.post("/users", { ...form, role });
+      const { data } = await attendanceApi.post("/users", { ...form, role });
       setForm(emptyForm);
+      setFormOpen(false);
+      setMessage(
+        `${label} "${data.name}" creado. Contraseña temporal: ${data.temporaryPassword} (deberá cambiarla al iniciar sesión).`
+      );
       load();
     } catch (err) {
       setError(err.response?.data?.message || `No se pudo crear el ${label.toLowerCase()}`);
@@ -38,44 +45,57 @@ export default function StaffTab({ role, label }) {
 
   return (
     <div>
+      {error && <p className="error">{error}</p>}
+      {message && <p className="success">{message}</p>}
+
       <div className="section">
-        <h2>Nuevo {label.toLowerCase()}</h2>
-        {error && <p className="error">{error}</p>}
-        <form onSubmit={handleCreate} className="form-row">
-          <input
-            placeholder="Nombre"
-            value={form.firstName}
-            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-            required
-          />
-          <input
-            placeholder="Apellido"
-            value={form.lastName}
-            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            required
-          />
-          <button type="submit">Crear {label.toLowerCase()}</button>
-        </form>
+        <div className="panel-header">
+          <h2>
+            {label}s ({staff.length})
+          </h2>
+          <button className="secondary" onClick={() => setFormOpen((v) => !v)}>
+            {formOpen ? "Cancelar" : `+ Nuevo ${label.toLowerCase()}`}
+          </button>
+        </div>
+
+        {formOpen && (
+          <form onSubmit={handleCreate} className="field-grid">
+            <label>
+              Nombre
+              <input
+                value={form.firstName}
+                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Apellido
+              <input
+                value={form.lastName}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Email
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                required
+              />
+            </label>
+            <p className="hint field-grid-span">
+              Se asigna una contraseña temporal que deberá cambiar en su primer inicio de sesión.
+            </p>
+            <div className="field-grid-span">
+              <button type="submit">Crear {label.toLowerCase()}</button>
+            </div>
+          </form>
+        )}
       </div>
 
       <div className="section">
-        <h2>
-          {label}s ({staff.length})
-        </h2>
         <div className="table-wrap">
           <table className="table">
             <thead>
