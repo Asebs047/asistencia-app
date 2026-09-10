@@ -1,5 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import { IconLogout } from "./icons";
 import "./NavBar.css";
 
 export default function NavBar() {
@@ -31,6 +32,7 @@ export default function NavBar() {
               {user.name} ({user.role})
             </span>
             <button className="navbar-logout" onClick={handleLogout}>
+              <IconLogout />
               Salir
             </button>
           </>

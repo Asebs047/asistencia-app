@@ -1,16 +1,20 @@
 :root {
   color-scheme: light;
+  --font-display: "Sora", "Inter", system-ui, sans-serif;
   --font: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
 
-  --bg: #f7f7fb;
+  --bg: #faf8f4;
   --surface: #ffffff;
-  --border: #e4e4ec;
-  --text: #1c1c28;
-  --text-muted: #6b6b7b;
+  --border: #e7e2d8;
+  --text: #1c2422;
+  --text-muted: #6b7370;
 
-  --accent: #4338ca;
-  --accent-hover: #372ea8;
-  --accent-soft: #eeecfc;
+  --brand: #0d5c63;
+  --brand-dark: #0a464b;
+  --brand-soft: #e3eeed;
+
+  --accent: #b45309;
+  --accent-soft: #fdf1e2;
 
   --success: #15803d;
   --success-soft: #ecfdf3;
@@ -19,9 +23,9 @@
   --warning: #b45309;
   --warning-soft: #fffbeb;
 
-  --radius: 10px;
-  --radius-sm: 6px;
-  --shadow: 0 1px 2px rgba(20, 20, 40, 0.04), 0 1px 8px rgba(20, 20, 40, 0.04);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(13, 40, 40, 0.05), 0 4px 14px rgba(13, 40, 40, 0.05);
 }
 
 * {
@@ -38,18 +42,20 @@ body {
 h1,
 h2,
 h3 {
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   margin: 0 0 1.25rem;
 }
 
 h2 {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   margin: 0 0 0.75rem;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -59,7 +65,7 @@ p {
 }
 
 .page {
-  max-width: 880px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 1.75rem 1.5rem 3rem;
 }
@@ -94,7 +100,7 @@ p {
 
 .hint {
   color: var(--text-muted);
-  background: var(--bg);
+  background: var(--brand-soft);
 }
 
 /* Forms */
@@ -143,25 +149,25 @@ select {
 
 input:focus,
 select:focus {
-  outline: 2px solid var(--accent-soft);
-  border-color: var(--accent);
+  outline: 2px solid var(--brand-soft);
+  border-color: var(--brand);
 }
 
 button {
   font: inherit;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   padding: 0.5rem 0.9rem;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--brand);
   border-radius: var(--radius-sm);
-  background: var(--accent);
+  background: var(--brand);
   color: white;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
 button:hover {
-  background: var(--accent-hover);
+  background: var(--brand-dark);
 }
 
 button:disabled {
@@ -171,11 +177,11 @@ button:disabled {
 
 button.secondary {
   background: transparent;
-  color: var(--accent);
+  color: var(--brand);
 }
 
 button.secondary:hover {
-  background: var(--accent-soft);
+  background: var(--brand-soft);
 }
 
 button.danger {
@@ -209,10 +215,10 @@ button.danger:hover {
 
 .table th {
   color: var(--text-muted);
-  font-weight: 500;
-  font-size: 0.78rem;
+  font-weight: 600;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 
 .table tbody tr:last-child td {
@@ -224,9 +230,9 @@ button.danger:hover {
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
   font-size: 0.75rem;
-  font-weight: 500;
-  background: var(--accent-soft);
-  color: var(--accent);
+  font-weight: 600;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
 }
 
 .badge-success {
@@ -271,33 +277,108 @@ button.danger:hover {
   color: var(--text-muted);
 }
 
-/* Tabs */
+/* App shell: sidebar + content, used by the role panels */
 
-.tabs {
+.app-shell {
   display: flex;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1.25rem;
-  overflow-x: auto;
+  align-items: flex-start;
+  gap: 0;
+  max-width: 1180px;
+  margin: 0 auto;
 }
 
-.tab-button {
-  background: none;
+.app-sidebar {
+  width: 208px;
+  flex-shrink: 0;
+  padding: 1.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.app-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
   border: none;
-  border-radius: 0;
+  background: transparent;
   color: var(--text-muted);
-  padding: 0.6rem 0.9rem;
+  font-family: var(--font);
+  font-size: 0.85rem;
   font-weight: 500;
-  border-bottom: 2px solid transparent;
-  white-space: nowrap;
+  text-align: left;
+  cursor: pointer;
 }
 
-.tab-button:hover {
-  background: none;
-  color: var(--text);
+.app-sidebar-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
-.tab-button.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+.app-sidebar-item:hover {
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+}
+
+.app-sidebar-item.active {
+  background: var(--brand);
+  color: white;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+  padding: 1.75rem 1.5rem 3rem 1rem;
+}
+
+/* Stat cards */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.stat-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.stat-card-value {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.stat-card-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
