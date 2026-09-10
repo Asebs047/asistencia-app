@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import "./NavBar.css";
 
@@ -13,14 +13,15 @@ export default function NavBar() {
 
   return (
     <nav className="navbar">
-      <span className="navbar-brand">Asistencia App</span>
+      <Link to="/" className="navbar-brand">
+        Asistencia App
+      </Link>
       <div className="navbar-links">
-        <NavLink to="/" end>
-          Inicio
-        </NavLink>
         {user && (
           <>
-            <NavLink to="/panel">Mi panel</NavLink>
+            <NavLink to="/" end>
+              Mi panel
+            </NavLink>
             <NavLink to="/grupos">Grupos</NavLink>
           </>
         )}

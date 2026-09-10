@@ -99,6 +99,10 @@ export default function GroupsTab() {
         <div className="section" key={g._id}>
           <h2>{g.name}</h2>
           <p className="hint">Maestro: {g.teacherId?.name ?? "Sin asignar"}</p>
+          <p className="hint">
+            Un alumno solo puede pertenecer a un grupo: marcarlo aquí lo mueve desde su grupo
+            anterior.
+          </p>
 
           <div className="table-wrap" style={{ margin: "0.75rem 0" }}>
             <table className="table">
@@ -107,22 +111,29 @@ export default function GroupsTab() {
                   <th></th>
                   <th>Alumno</th>
                   <th>Carnet</th>
+                  <th>Grupo actual</th>
                 </tr>
               </thead>
               <tbody>
-                {students.map((s) => (
-                  <tr key={s._id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={(selections[g._id] || []).includes(s._id)}
-                        onChange={() => toggleStudent(g._id, s._id)}
-                      />
-                    </td>
-                    <td>{s.name}</td>
-                    <td>{s.carnetCode}</td>
-                  </tr>
-                ))}
+                {students.map((s) => {
+                  const currentGroup = groups.find((og) => og._id === s.groupId);
+                  return (
+                    <tr key={s._id}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={(selections[g._id] || []).includes(s._id)}
+                          onChange={() => toggleStudent(g._id, s._id)}
+                        />
+                      </td>
+                      <td>{s.name}</td>
+                      <td>{s.carnetCode}</td>
+                      <td>
+                        {currentGroup && currentGroup._id !== g._id ? currentGroup.name : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

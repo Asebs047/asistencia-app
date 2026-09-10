@@ -12,6 +12,8 @@
   font-weight: 600;
   font-size: 1rem;
   letter-spacing: -0.01em;
+  color: white;
+  text-decoration: none;
 }
 
 .navbar-links {

@@ -18,7 +18,7 @@ export default function Login() {
     try {
       const { data } = await attendanceApi.post("/auth/login", { email, password });
       login(data.token, data.user);
-      navigate("/panel");
+      navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || "No se pudo iniciar sesión");
     } finally {
