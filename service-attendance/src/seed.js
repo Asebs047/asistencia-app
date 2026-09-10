@@ -55,7 +55,6 @@ async function seed() {
   const grupo = await Group.create({
     name: "Grupo A - Turno Matutino",
     teacherId: maestro._id,
-    studentIds: [alumno1._id, alumno2._id],
   });
 
   await User.updateMany(

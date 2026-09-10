@@ -19,21 +19,37 @@ const updateGroupSchema = z.object({
   studentIds: z.array(z.string()).optional(),
 });
 
-// Mantiene sincronizado User.groupId con Group.studentIds: quita el grupo a los
-// alumnos removidos y lo asigna a los agregados. Group.studentIds es la fuente de
-// verdad; User.groupId es una copia denormalizada que usan asistencia y permisos.
-async function syncStudentGroups(groupId, previousStudentIds, nextStudentIds) {
-  const previous = new Set(previousStudentIds.map(String));
-  const next = new Set(nextStudentIds.map(String));
+// Adjunta a cada grupo sus alumnos actuales (derivados de User.groupId, no de un
+// arreglo propio) para no romper el contrato que ya consume el frontend.
+async function attachStudents(groups) {
+  const list = Array.isArray(groups) ? groups : [groups];
+  const groupIds = list.map((g) => g._id);
+  const students = await User.find({ role: "alumno", groupId: { $in: groupIds } }).select(
+    "name email carnetCode groupId"
+  );
 
-  const added = [...next].filter((id) => !previous.has(id));
-  const removed = [...previous].filter((id) => !next.has(id));
-
-  if (added.length) {
-    await User.updateMany({ _id: { $in: added } }, { groupId });
+  const byGroup = new Map();
+  for (const student of students) {
+    const key = student.groupId.toString();
+    if (!byGroup.has(key)) byGroup.set(key, []);
+    byGroup.get(key).push(student);
   }
-  if (removed.length) {
-    await User.updateMany({ _id: { $in: removed }, groupId }, { groupId: null });
+
+  const result = list.map((g) => ({
+    ...g.toObject(),
+    studentIds: byGroup.get(g._id.toString()) || [],
+  }));
+
+  return Array.isArray(groups) ? result : result[0];
+}
+
+// Un alumno solo puede pertenecer a un grupo: asignarlo a `groupId` mueve el
+// groupId de cada alumno de la lista (quitándolo de cualquier grupo anterior) y
+// libera a los que estaban en este grupo pero ya no vienen en `studentIds`.
+async function setGroupStudents(groupId, studentIds) {
+  await User.updateMany({ groupId, _id: { $nin: studentIds } }, { groupId: null });
+  if (studentIds.length) {
+    await User.updateMany({ _id: { $in: studentIds } }, { groupId });
   }
 }
 
@@ -45,30 +61,23 @@ router.get(
   asyncHandler(async (req, res) => {
     const { role, sub, groupId } = req.user;
 
-    const baseQuery = Group.find()
-      .populate("teacherId", "name email")
-      .populate("studentIds", "name email carnetCode")
-      .sort({ createdAt: -1 });
-
     if (role === "coordinador") {
-      return res.json(await baseQuery);
+      const groups = await Group.find().populate("teacherId", "name email").sort({ createdAt: -1 });
+      return res.json(await attachStudents(groups));
     }
 
     if (role === "maestro") {
-      return res.json(
-        await Group.find({ teacherId: sub })
-          .populate("teacherId", "name email")
-          .populate("studentIds", "name email carnetCode")
-          .sort({ createdAt: -1 })
-      );
+      const groups = await Group.find({ teacherId: sub })
+        .populate("teacherId", "name email")
+        .sort({ createdAt: -1 });
+      return res.json(await attachStudents(groups));
     }
 
     // alumno: solo su grupo
     if (!groupId) return res.json([]);
-    const group = await Group.findById(groupId)
-      .populate("teacherId", "name email")
-      .populate("studentIds", "name email carnetCode");
-    res.json(group ? [group] : []);
+    const group = await Group.findById(groupId).populate("teacherId", "name email");
+    if (!group) return res.json([]);
+    res.json([await attachStudents(group)]);
   })
 );
 
@@ -82,11 +91,12 @@ router.post(
       return res.status(400).json({ message: "Datos inválidos", errors: parsed.error.issues });
     }
 
-    const group = await Group.create(parsed.data);
-    if (parsed.data.studentIds?.length) {
-      await syncStudentGroups(group._id, [], parsed.data.studentIds);
+    const { studentIds, ...groupFields } = parsed.data;
+    const group = await Group.create(groupFields);
+    if (studentIds?.length) {
+      await setGroupStudents(group._id, studentIds);
     }
-    res.status(201).json(group);
+    res.status(201).json(await attachStudents(group));
   })
 );
 
@@ -100,16 +110,15 @@ router.put(
       return res.status(400).json({ message: "Datos inválidos", errors: parsed.error.issues });
     }
 
-    const before = await Group.findById(req.params.id);
-    if (!before) return res.status(404).json({ message: "Grupo no encontrado" });
+    const { studentIds, ...groupFields } = parsed.data;
+    const group = await Group.findByIdAndUpdate(req.params.id, groupFields, { new: true });
+    if (!group) return res.status(404).json({ message: "Grupo no encontrado" });
 
-    const group = await Group.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
-
-    if (parsed.data.studentIds) {
-      await syncStudentGroups(group._id, before.studentIds, parsed.data.studentIds);
+    if (studentIds) {
+      await setGroupStudents(group._id, studentIds);
     }
 
-    res.json(group);
+    res.json(await attachStudents(group));
   })
 );
 
