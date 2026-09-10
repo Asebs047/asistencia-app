@@ -2,42 +2,49 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
-  background-color: #1e3a5f;
+  padding: 0.85rem 1.5rem;
+  background-color: #1c1c28;
   color: white;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
 .navbar-brand {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
 }
 
 .navbar-links {
   display: flex;
+  align-items: center;
   gap: 1.25rem;
+  font-size: 0.88rem;
 }
 
 .navbar-links a {
-  color: white;
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
-  opacity: 0.8;
 }
 
 .navbar-links a.active,
 .navbar-links a:hover {
-  opacity: 1;
-  text-decoration: underline;
+  color: white;
 }
 
 .navbar-user {
-  opacity: 0.8;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .navbar-logout {
   background: transparent;
-  border: 1px solid white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  border-radius: 4px;
-  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.82rem;
   cursor: pointer;
+}
+
+.navbar-logout:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
