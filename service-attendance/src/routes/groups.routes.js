@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import Group from "../models/Group.js";
-import "../models/User.js";
+import User from "../models/User.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 
@@ -18,6 +18,24 @@ const updateGroupSchema = z.object({
   teacherId: z.string().nullable().optional(),
   studentIds: z.array(z.string()).optional(),
 });
+
+// Mantiene sincronizado User.groupId con Group.studentIds: quita el grupo a los
+// alumnos removidos y lo asigna a los agregados. Group.studentIds es la fuente de
+// verdad; User.groupId es una copia denormalizada que usan asistencia y permisos.
+async function syncStudentGroups(groupId, previousStudentIds, nextStudentIds) {
+  const previous = new Set(previousStudentIds.map(String));
+  const next = new Set(nextStudentIds.map(String));
+
+  const added = [...next].filter((id) => !previous.has(id));
+  const removed = [...previous].filter((id) => !next.has(id));
+
+  if (added.length) {
+    await User.updateMany({ _id: { $in: added } }, { groupId });
+  }
+  if (removed.length) {
+    await User.updateMany({ _id: { $in: removed }, groupId }, { groupId: null });
+  }
+}
 
 router.use(authMiddleware);
 
@@ -65,6 +83,9 @@ router.post(
     }
 
     const group = await Group.create(parsed.data);
+    if (parsed.data.studentIds?.length) {
+      await syncStudentGroups(group._id, [], parsed.data.studentIds);
+    }
     res.status(201).json(group);
   })
 );
@@ -79,8 +100,15 @@ router.put(
       return res.status(400).json({ message: "Datos inválidos", errors: parsed.error.issues });
     }
 
+    const before = await Group.findById(req.params.id);
+    if (!before) return res.status(404).json({ message: "Grupo no encontrado" });
+
     const group = await Group.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
-    if (!group) return res.status(404).json({ message: "Grupo no encontrado" });
+
+    if (parsed.data.studentIds) {
+      await syncStudentGroups(group._id, before.studentIds, parsed.data.studentIds);
+    }
+
     res.json(group);
   })
 );

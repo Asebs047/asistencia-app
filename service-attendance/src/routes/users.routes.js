@@ -12,14 +12,15 @@ const carnetSchema = z
   .string()
   .regex(CARNET_REGEX, "El carnet debe tener 7 dígitos (AAAANNN, ej. 2024047)");
 
-const baseFields = {
-  name: z.string().min(1),
-  email: z.string().email(),
+const nameFields = {
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
   password: z.string().min(6),
 };
 
+// El alumno no envía email: se genera a partir de su nombre y carnet.
 const createStudentSchema = z.object({
-  ...baseFields,
+  ...nameFields,
   role: z.literal("alumno"),
   carnetCode: carnetSchema,
   groupId: z.string().optional(),
@@ -27,15 +28,17 @@ const createStudentSchema = z.object({
 
 const createStaffSchema = z
   .object({
-    ...baseFields,
+    ...nameFields,
     role: z.enum(["maestro", "coordinador"]),
+    email: z.string().email(),
   })
   .strict("Maestro y coordinador no llevan carnet");
 
 const createUserSchema = z.discriminatedUnion("role", [createStudentSchema, createStaffSchema]);
 
 const updateUserSchema = z.object({
-  name: z.string().min(1).optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
   carnetCode: carnetSchema.optional(),
   active: z.boolean().optional(),
   groupId: z.string().nullable().optional(),
@@ -70,7 +73,8 @@ router.get(
   })
 );
 
-// POST /users - solo coordinador. Alumno exige carnet; maestro/coordinador no lo llevan.
+// POST /users - solo coordinador. Alumno exige carnet (email autogenerado);
+// maestro/coordinador dan su propio email y no llevan carnet.
 router.post(
   "/",
   requireRole("coordinador"),
@@ -105,12 +109,11 @@ router.put(
       return res.status(400).json({ message: "Datos inválidos", errors: parsed.error.issues });
     }
 
-    const user = await User.findByIdAndUpdate(req.params.id, parsed.data, {
-      new: true,
-      runValidators: true,
-      context: "query",
-    });
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    Object.assign(user, parsed.data);
+    await user.save();
     res.json(user);
   })
 );

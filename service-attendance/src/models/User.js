@@ -10,9 +10,28 @@ function isValidCarnet(value) {
   return year >= MIN_ENROLLMENT_YEAR && year <= currentYear;
 }
 
+const DIACRITICS_REGEX = new RegExp("[\\u0300-\\u036f]", "g");
+
+function slugify(value) {
+  return value
+    .normalize("NFD")
+    .replace(DIACRITICS_REGEX, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+}
+
+// ej. Juan Pérez + carnet 2024048 -> jperez-2024048@example.com
+function generateStudentEmail(firstName, lastName, carnetCode) {
+  const initial = slugify(firstName).charAt(0);
+  const last = slugify(lastName);
+  return `${initial}${last}-${carnetCode}@example.com`;
+}
+
 const userSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true },
+    firstName: { type: String, required: true, trim: true },
+    lastName: { type: String, required: true, trim: true },
+    name: { type: String, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     role: {
@@ -43,7 +62,15 @@ userSchema.pre("validate", function () {
   if (this.role !== "alumno" && this.carnetCode) {
     this.invalidate("carnetCode", "Solo los alumnos tienen carnet");
   }
+
+  if (this.firstName && this.lastName) {
+    this.name = `${this.firstName} ${this.lastName}`;
+  }
+
+  if (this.role === "alumno" && this.isNew && this.firstName && this.lastName && this.carnetCode) {
+    this.email = generateStudentEmail(this.firstName, this.lastName, this.carnetCode);
+  }
 });
 
-export { isValidCarnet, CARNET_REGEX };
+export { isValidCarnet, CARNET_REGEX, generateStudentEmail, slugify };
 export default mongoose.model("User", userSchema);

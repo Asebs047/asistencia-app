@@ -20,30 +20,33 @@ async function seed() {
   const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
 
   const coordinador = await User.create({
-    name: "Ana Coordinadora",
+    firstName: "Ana",
+    lastName: "Coordinadora",
     email: "coordinadora@example.com",
     passwordHash,
     role: "coordinador",
   });
 
   const maestro = await User.create({
-    name: "Luis Maestro",
+    firstName: "Luis",
+    lastName: "Maestro",
     email: "maestro@example.com",
     passwordHash,
     role: "maestro",
   });
 
+  // El email de los alumnos se autogenera: primera letra del nombre + apellido + carnet.
   const alumno1 = await User.create({
-    name: "Carlos Alumno",
-    email: "alumno1@example.com",
+    firstName: "Carlos",
+    lastName: "Alumno",
     passwordHash,
     role: "alumno",
     carnetCode: "2024001",
   });
 
   const alumno2 = await User.create({
-    name: "Maria Alumna",
-    email: "alumno2@example.com",
+    firstName: "Maria",
+    lastName: "Alumna",
     passwordHash,
     role: "alumno",
     carnetCode: "2024002",
