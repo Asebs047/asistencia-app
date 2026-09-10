@@ -49,6 +49,17 @@ npm run seed   # crea datos de ejemplo (coordinador, maestro, grupo, alumnos)
 npm run dev
 ```
 
+`JWT_SECRET` debe ser **el mismo valor** en `.env` de `service-attendance` y de
+`service-reports`, ya que ambos verifican el mismo token sin llamarse entre sí para auth.
+
+Usuarios de prueba creados por el seed (contraseña `changeme123` para todos):
+
+| Rol | Email |
+| --- | --- |
+| coordinador | coordinadora@example.com |
+| maestro | maestro@example.com |
+| alumno | alumno1@example.com / alumno2@example.com |
+
 ### 3. Servicio B — service-reports (puerto 4002)
 
 ```bash
@@ -80,6 +91,17 @@ mediante Pull Request al finalizar:
 - `sprint-3`: reportes, estadísticas, historial, control completo de roles, mejoras
   visuales y PWA, README final.
 
+## Biometría (WebAuthn)
+
+La marcación biométrica usa WebAuthn real (`@simplewebauthn/server` y
+`@simplewebauthn/browser`), no una simulación: el alumno enrola el autenticador de su
+propio equipo (Windows Hello, huella, etc.) desde su panel ("Registrar biometría") y
+luego puede marcar asistencia con él ("Marcar con biometría"). Solo se guarda el ID de
+credencial y la llave pública en MongoDB — nunca datos biométricos crudos. Funciona en
+`http://localhost` sin necesidad de HTTPS. El diálogo del autenticador es del sistema
+operativo/navegador, así que ese paso debe probarse en un navegador real (Chrome/Edge)
+con un lector de huellas o Windows Hello configurado.
+
 ## Estado actual
 
-Sprint 1 en desarrollo.
+Sprint 2 en desarrollo.
