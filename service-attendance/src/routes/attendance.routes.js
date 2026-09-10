@@ -60,6 +60,13 @@ router.post(
     }
 
     const student = await User.findOne({ carnetCode: parsed.data.carnetCode, role: "alumno" });
+
+    // Un alumno solo puede marcar su propia asistencia; solo maestro/coordinador
+    // (ej. operando un lector físico) pueden marcar la de cualquier alumno.
+    if (req.user.role === "alumno" && student && student._id.toString() !== req.user.sub) {
+      return res.status(403).json({ message: "No puedes marcar la asistencia de otro alumno" });
+    }
+
     await createAttendance(student, "carnet", parsed.data.type, res);
   })
 );

@@ -41,15 +41,16 @@ router.post(
   "/",
   requireRole("alumno"),
   asyncHandler(async (req, res) => {
-    const { sub: studentId, groupId } = req.user;
+    const { sub: studentId } = req.user;
+
+    // Se consulta el grupo actual del alumno directamente en service-attendance en
+    // vez de usar el claim del JWT, que puede quedar desactualizado si lo
+    // reasignan de grupo mientras la sesión sigue abierta.
+    const client = attendanceClientFor(req.token);
+    const { data: ownGroups } = await client.get("/groups");
+    const groupId = ownGroups[0]?._id;
     if (!groupId) {
       return res.status(422).json({ message: "No perteneces a ningún grupo" });
-    }
-
-    // Validación real contra service-attendance: el grupo existe y sigue vigente.
-    const group = await getGroupById(req.token, groupId);
-    if (!group) {
-      return res.status(422).json({ message: "Grupo no válido" });
     }
 
     const existing = await Permission.findOne({

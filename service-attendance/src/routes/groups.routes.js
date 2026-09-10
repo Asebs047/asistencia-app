@@ -59,7 +59,7 @@ router.use(authMiddleware);
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const { role, sub, groupId } = req.user;
+    const { role, sub } = req.user;
 
     if (role === "coordinador") {
       const groups = await Group.find().populate("teacherId", "name email").sort({ createdAt: -1 });
@@ -73,9 +73,12 @@ router.get(
       return res.json(await attachStudents(groups));
     }
 
-    // alumno: solo su grupo
-    if (!groupId) return res.json([]);
-    const group = await Group.findById(groupId).populate("teacherId", "name email");
+    // alumno: solo su grupo. Se consulta groupId fresco en Mongo en vez de confiar
+    // en el claim del JWT, que puede quedar desactualizado si lo reasignan de
+    // grupo mientras la sesión sigue abierta.
+    const self = await User.findById(sub).select("groupId");
+    if (!self?.groupId) return res.json([]);
+    const group = await Group.findById(self.groupId).populate("teacherId", "name email");
     if (!group) return res.json([]);
     res.json([await attachStudents(group)]);
   })
