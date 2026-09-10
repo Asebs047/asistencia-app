@@ -19,9 +19,11 @@ export default function NavBar() {
           Inicio
         </NavLink>
         {user && (
-          <NavLink to="/panel">Mi panel</NavLink>
+          <>
+            <NavLink to="/panel">Mi panel</NavLink>
+            <NavLink to="/grupos">Grupos</NavLink>
+          </>
         )}
-        <NavLink to="/grupos">Grupos</NavLink>
         {user ? (
           <>
             <span className="navbar-user">

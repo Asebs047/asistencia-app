@@ -58,6 +58,22 @@ export default function AttendanceTab() {
     }
   }
 
+  // Alternativa sin diálogo real del sistema operativo, para equipos sin lector de
+  // huella/Windows Hello configurado. No verifica una aserción criptográfica real.
+  async function markByBiometricSimulated(type) {
+    setError(null);
+    setMessage("Simulando verificación biométrica...");
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await attendanceApi.post(`/attendance/biometric/simulate?type=${type}`);
+      setMessage(`${type === "entrada" ? "Entrada" : "Salida"} marcada con biometría (simulada).`);
+      load();
+    } catch (err) {
+      setMessage(null);
+      setError(err.response?.data?.message || "No se pudo marcar asistencia biométrica");
+    }
+  }
+
   return (
     <div>
       <div className="section">
@@ -79,6 +95,9 @@ export default function AttendanceTab() {
 
       <div className="section">
         <h2>Marcar con biometría</h2>
+        <p className="hint">
+          Requiere un autenticador real (huella/Windows Hello) registrado en este equipo.
+        </p>
         <div className="form-inline">
           <button className="secondary" onClick={enrollBiometric}>
             Registrar biometría
@@ -86,6 +105,16 @@ export default function AttendanceTab() {
           <button onClick={() => markByBiometric("entrada")}>Marcar entrada</button>
           <button className="secondary" onClick={() => markByBiometric("salida")}>
             Marcar salida
+          </button>
+        </div>
+
+        <p className="hint" style={{ marginTop: "0.9rem" }}>
+          ¿Sin lector de huella disponible? Usa la simulación:
+        </p>
+        <div className="form-inline">
+          <button onClick={() => markByBiometricSimulated("entrada")}>Simular entrada</button>
+          <button className="secondary" onClick={() => markByBiometricSimulated("salida")}>
+            Simular salida
           </button>
         </div>
       </div>
