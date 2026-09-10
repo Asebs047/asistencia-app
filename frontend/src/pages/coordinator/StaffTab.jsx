@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { attendanceApi } from "../../api/attendanceApi";
 
-const emptyForm = { name: "", email: "", password: "" };
+const emptyForm = { firstName: "", lastName: "", email: "", password: "" };
 
 // Formulario y listado compartido para maestro/coordinador: solo nombre, email
 // y contraseña (sin carnet, a diferencia de los alumnos).
@@ -44,8 +44,14 @@ export default function StaffTab({ role, label }) {
         <form onSubmit={handleCreate} className="form-row">
           <input
             placeholder="Nombre"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            value={form.firstName}
+            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Apellido"
+            value={form.lastName}
+            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
             required
           />
           <input

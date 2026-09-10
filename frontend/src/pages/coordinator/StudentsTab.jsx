@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { attendanceApi } from "../../api/attendanceApi";
 
-const emptyForm = { name: "", email: "", password: "", carnetCode: "" };
+const emptyForm = { firstName: "", lastName: "", password: "", carnetCode: "" };
 
 export default function StudentsTab() {
   const [students, setStudents] = useState([]);
@@ -39,18 +39,18 @@ export default function StudentsTab() {
       <div className="section">
         <h2>Nuevo alumno</h2>
         {error && <p className="error">{error}</p>}
+        <p className="hint">El email se genera automáticamente a partir del nombre y el carnet.</p>
         <form onSubmit={handleCreate} className="form-row">
           <input
             placeholder="Nombre"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            value={form.firstName}
+            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
             required
           />
           <input
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="Apellido"
+            value={form.lastName}
+            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
             required
           />
           <input
