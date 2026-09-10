@@ -1,5 +1,6 @@
 import { Router } from "express";
 import Group from "../models/Group.js";
+import "../models/User.js";
 
 const router = Router();
 
