@@ -57,13 +57,18 @@ los primeros 4 son el año de inscripción y los últimos 3 el identificador (ej
 La asistencia registra entrada y salida por separado (un máximo de una de cada por día
 por alumno), cada una con fecha, hora, alumno, grupo y método (`carnet` o `biometric`).
 
+Los usuarios piden nombre y apellido por separado. El email de los alumnos **se genera
+automáticamente** (primera letra del nombre + apellido + `-` + carnet, ej. `Juan Pérez`
+con carnet `2024048` → `jperez-2024048@example.com`); maestro y coordinador sí ingresan
+su email manualmente, ya que no tienen carnet.
+
 Usuarios de prueba creados por el seed (contraseña `changeme123` para todos):
 
 | Rol | Email |
 | --- | --- |
 | coordinador | coordinadora@example.com |
 | maestro | maestro@example.com |
-| alumno | alumno1@example.com / alumno2@example.com |
+| alumno | calumno-2024001@example.com / malumna-2024002@example.com |
 
 ### 3. Servicio B — service-reports (puerto 4002)
 
