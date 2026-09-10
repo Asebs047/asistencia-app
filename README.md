@@ -55,7 +55,7 @@ o usar una instancia local/Atlas y ajustar `MONGO_URI` en cada `.env`.
 cd service-attendance
 npm install
 cp .env.example .env
-npm run seed   # crea datos de ejemplo (coordinador, maestro, grupo, alumnos)
+npm run seed   # crea datos de ejemplo (2 grupos, 2 maestros, 6 alumnos, historial de asistencia)
 npm run dev
 ```
 
@@ -66,6 +66,7 @@ cd service-reports
 npm install
 cp .env.example .env
 npm run dev
+npm run seed   # opcional: crea permisos de ejemplo (requiere service-attendance corriendo y ya sembrado)
 ```
 
 `JWT_SECRET` debe ser **el mismo valor** en el `.env` de ambos servicios: cada uno
@@ -91,6 +92,7 @@ de instalación en la barra de direcciones, o "Agregar a pantalla de inicio" en 
 | `ATTENDANCE_SERVICE_URL` | reports | URL de Servicio A para las llamadas HTTP internas |
 | `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN` | attendance | Dominio/origen esperado por WebAuthn (`localhost` en desarrollo) |
 | `ATTENDANCE_ENTRY_TIME` / `ATTENDANCE_GRACE_MINUTES` | reports | Hora de entrada y margen de tolerancia para el reporte de puntualidad (por defecto `07:00` + `15` min) |
+| `DEFAULT_USER_PASSWORD` | attendance | Contraseña temporal asignada a todo usuario nuevo (por defecto `changeme123`) |
 
 ## Usuarios y reglas de negocio
 
@@ -103,14 +105,32 @@ Los formularios de alta piden nombre y apellido por separado, y son distintos po
 el de alumno pide carnet y **no** pide email (se autogenera: primera letra del nombre +
 apellido + `-` + carnet, ej. `Juan Pérez` con carnet `2024048` →
 `jperez-2024048@example.com`); maestro y coordinador ingresan su email manualmente.
+Ninguno de los dos formularios pide contraseña: **todo usuario nuevo recibe una
+contraseña temporal** (mostrada una sola vez al coordinador al crearlo) y queda marcado
+como pendiente de cambiarla (`passwordChanged: false`). En su primer inicio de sesión el
+sistema lo redirige automáticamente a "Cambiar contraseña" y no lo deja continuar hasta
+hacerlo; cualquier usuario puede volver a cambiarla después desde el enlace
+"Contraseña" del menú.
 
-Usuarios de prueba creados por el seed (contraseña `changeme123` para todos):
+Usuarios de prueba creados por el seed — ya marcados como `passwordChanged: true` para
+que la demo no pida cambiarla (contraseña `changeme123` para todos):
 
-| Rol | Email |
-| --- | --- |
-| coordinador | coordinadora@example.com |
-| maestro | maestro@example.com |
-| alumno | calumno-2024001@example.com / malumna-2024002@example.com |
+| Rol | Nombre | Email |
+| --- | --- | --- |
+| coordinador | Ana Coordinadora | coordinadora@example.com |
+| maestro | Luis Maestro (Grupo A) | maestro@example.com |
+| maestro | Sofia Martinez (Grupo B) | smartinez@example.com |
+| alumno | Carlos Alumno (2024001, Grupo A) | calumno-2024001@example.com |
+| alumno | Maria Alumna (2024002, Grupo A) | malumna-2024002@example.com |
+| alumno | Jose Ramirez (2024003, Grupo A) | jramirez-2024003@example.com |
+| alumno | Ana Torres (2024004, Grupo B) | atorres-2024004@example.com |
+| alumno | Pedro Diaz (2024005, Grupo B) | pdiaz-2024005@example.com |
+| alumno | Lucia Fernandez (2024006, Grupo B) | lfernandez-2024006@example.com |
+
+El seed también crea ~5 días de historial de asistencia por alumno (con entradas
+puntuales, tarde y ausencias mezcladas) y el de `service-reports` crea permisos de
+ejemplo en distintos estados — para que los reportes y estadísticas tengan datos reales
+que mostrar desde el primer arranque, sin tener que generarlos a mano.
 
 ### Roles y permisos
 
@@ -127,7 +147,8 @@ Usuarios de prueba creados por el seed (contraseña `changeme123` para todos):
 
 ## Referencia de API
 
-**service-attendance** (`:4001`) — `POST /auth/login` · `GET/POST /users`,
+**service-attendance** (`:4001`) — `POST /auth/login`, `POST /auth/change-password` ·
+`GET/POST /users`,
 `PUT /users/:id` · `GET/POST /groups`, `PUT /groups/:id`, `GET /groups/:id` ·
 `POST /attendance/card`, `POST /attendance/biometric`,
 `POST /attendance/biometric/simulate`, `GET /attendance`,
