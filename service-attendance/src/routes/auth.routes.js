@@ -20,7 +20,8 @@ router.post(
       return res.status(400).json({ message: "Credenciales inválidas", errors: parsed.error.issues });
     }
 
-    const { email, password } = parsed.data;
+    const { password } = parsed.data;
+    const email = parsed.data.email.trim().toLowerCase();
     const user = await User.findOne({ email, active: true });
     if (!user) {
       return res.status(401).json({ message: "Email o contraseña incorrectos" });

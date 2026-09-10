@@ -162,3 +162,16 @@ biometricAttendanceRouter.post(
     await createAttendance(student, "biometric", type, res);
   })
 );
+
+// POST /attendance/biometric/simulate - alternativa sin WebAuthn real, para entornos
+// sin autenticador de plataforma disponible (huella/Windows Hello). Técnicamente
+// justificada: no verifica una aserción criptográfica, solo simula el resultado.
+biometricAttendanceRouter.post(
+  "/biometric/simulate",
+  requireRole("alumno"),
+  asyncHandler(async (req, res) => {
+    const type = req.query.type === "salida" ? "salida" : "entrada";
+    const student = await User.findById(req.user.sub);
+    await createAttendance(student, "biometric", type, res);
+  })
+);
